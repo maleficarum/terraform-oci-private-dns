@@ -2,7 +2,8 @@ resource "oci_dns_view" "dns_view" {
   compartment_id = var.compartment_id
 
   defined_tags = {
-    "Oracle-Tags.CreatedBy" = "default/terraform"
+    "Oracle-Tags.CreatedBy" = "default/terraform",
+    "Oracle-Tags.Environment" = var.environment 
   }
 
   display_name = var.domain_name
@@ -33,7 +34,8 @@ resource "oci_dns_zone" "dns_zone" {
   compartment_id = var.compartment_id
 
   defined_tags = {
-    "Oracle-Tags.CreatedBy" = "default/terraform"
+    "Oracle-Tags.CreatedBy" = "default/terraform",
+    "Oracle-Tags.Environment" = var.environment 
   }
 
   dnssec_state = "DISABLED"
@@ -89,8 +91,8 @@ resource "oci_dns_steering_policy" "export_mypolicy" {
   compartment_id = var.compartment_id
 
   defined_tags = {
-    "Oracle-Tags.CreatedBy" = "default/ivan@sinformex.com"
-    "Oracle-Tags.CreatedOn" = "2025-04-30T19:29:18.333Z"
+    "Oracle-Tags.CreatedBy" = "default/terraform",
+    "Oracle-Tags.Environment" = var.environment 
   }
 
   display_name = "mypolicy"
@@ -186,6 +188,7 @@ resource "oci_dns_rrset" "ns_record_set" {
   #scope = <<Optional value not found in discovery>>
   #view_id = <<Optional value not found in discovery>>
   zone_name_or_id = oci_dns_zone.dns_zone.id
+
 }
 
 resource "oci_dns_rrset" "soa_record_set" {
@@ -193,7 +196,7 @@ resource "oci_dns_rrset" "soa_record_set" {
   domain         = var.domain_name
   items {
     domain = var.domain_name
-    rdata  = "ns1.p201.dns.oraclecloud.net. hostmaster.sinformex.com. 2 3600 600 604800 1800"
+    rdata  = "ns1.p201.dns.oraclecloud.net. hostmaster.${var.domain_name}. 2 3600 600 604800 1800"//TODO: Cambiar esto para cada dominio
     rtype  = "SOA"
     ttl    = "300"
   }
