@@ -63,14 +63,14 @@ resource "oci_dns_steering_policy" "export_mypolicy" {
     for_each = local.compute_ip_list
     iterator = ip
     content {
-      name        = "${ip.key}-instance"
-      pool        = "${ip.key}-pool"
-      rdata       = ip.value
-      rtype       = "A"
+      name  = "${ip.key}-instance"
+      pool  = "${ip.key}-pool"
+      rdata = ip.value
+      rtype = "A"
       #is_disabled = try(tostring(answers.value.is_disabled), "false")
     }
   }
-   /*
+  /*
   answers {
     is_disabled = "false"
     name        = "resource1"
@@ -124,11 +124,11 @@ resource "oci_dns_steering_policy" "export_mypolicy" {
       iterator = ip
       content {
         answer_condition = "answer.pool == '${ip.key}-pool'"
-        value = ip.key
+        value            = ip.key
       }
     }
 
-/*
+    /*
     default_answer_data {
       answer_condition = "answer.pool == 'resource1'"
       #should_keep = <<Optional value not found in discovery>>

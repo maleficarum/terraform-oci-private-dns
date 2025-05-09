@@ -40,6 +40,6 @@ variable "compute_instances_ips" {
 
 # tflint-ignore: terraform_unused_declarations
 variable "compute_instances_names" {
-    type = list(string)
-    description = "List of VM names"
+  type        = list(string)
+  description = "List of VM names"
 }
