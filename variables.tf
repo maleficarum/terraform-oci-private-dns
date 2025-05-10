@@ -1,3 +1,9 @@
+# tflint-ignore: terraform_unused_declarations
+variable "steering_policy_enabled" {
+  type        = bool
+  description = "Whether is enabled steering policies."
+}
+
 variable "compartment_id" {
   type        = string
   description = "Compartment to deploy the resources"
@@ -16,7 +22,6 @@ variable "policy" {
     http_timeout = number
   })
 }
-
 
 /*variable "http_targets" {
     type = list(string)
@@ -42,4 +47,9 @@ variable "compute_instances_ips" {
 variable "compute_instances_names" {
   type        = list(string)
   description = "List of VM names"
+}
+
+variable "environment" {
+  type = string
+  description = "The target environment"
 }
