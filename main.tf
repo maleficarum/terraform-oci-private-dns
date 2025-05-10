@@ -2,8 +2,8 @@ resource "oci_dns_view" "dns_view" {
   compartment_id = var.compartment_id
 
   defined_tags = {
-    "Oracle-Tags.CreatedBy" = "default/terraform",
-    "Oracle-Tags.Environment" = var.environment 
+    "Oracle-Tags.CreatedBy"   = "default/terraform",
+    "Oracle-Tags.Environment" = var.environment
   }
 
   display_name = var.domain_name
@@ -13,7 +13,92 @@ resource "oci_dns_view" "dns_view" {
 }
 
 
-resource "oci_health_checks_http_monitor" "test_http_monitor" {
+resource "oci_dns_zone" "dns_zone" {
+  compartment_id = var.compartment_id
+
+  defined_tags = {
+    "Oracle-Tags.CreatedBy"   = "default/terraform",
+    "Oracle-Tags.Environment" = var.environment
+  }
+
+  dnssec_state = "DISABLED"
+
+  freeform_tags = {
+  }
+
+  name      = var.domain_name
+  scope     = "GLOBAL"
+  zone_type = "PRIMARY"
+}
+
+resource "oci_dns_rrset" "compute_instances_rrset" {
+  for_each = local.compute_ip_list
+
+  zone_name_or_id = oci_dns_zone.dns_zone.id
+  domain          = "${var.compute_instances_names[each.key]}.${var.domain_name}"
+  rtype           = "A"
+  compartment_id  = var.compartment_id
+
+  items {
+    domain = "${var.compute_instances_names[each.key]}.${var.domain_name}"
+    rtype  = "A"
+    rdata  = var.compute_instances_ips[each.key]
+    ttl    = 300
+  }
+}
+
+resource "oci_dns_rrset" "ns_record_set" {
+  compartment_id = var.compartment_id
+  domain         = var.domain_name
+  items {
+    domain = var.domain_name
+    rdata  = "ns2.p201.dns.oraclecloud.net."
+    rtype  = "NS"
+    ttl    = "86400"
+  }
+  items {
+    domain = var.domain_name
+    rdata  = "ns3.p201.dns.oraclecloud.net."
+    rtype  = "NS"
+    ttl    = "86400"
+  }
+  items {
+    domain = var.domain_name
+    rdata  = "ns4.p201.dns.oraclecloud.net."
+    rtype  = "NS"
+    ttl    = "86400"
+  }
+  items {
+    domain = var.domain_name
+    rdata  = "ns1.p201.dns.oraclecloud.net."
+    rtype  = "NS"
+    ttl    = "86400"
+  }
+  rtype = "NS"
+  #scope = <<Optional value not found in discovery>>
+  #view_id = <<Optional value not found in discovery>>
+  zone_name_or_id = oci_dns_zone.dns_zone.id
+
+}
+
+resource "oci_dns_rrset" "soa_record_set" {
+  compartment_id = var.compartment_id
+  domain         = var.domain_name
+  items {
+    domain = var.domain_name
+    rdata  = "ns1.p201.dns.oraclecloud.net. hostmaster.${var.domain_name}. 2 3600 600 604800 1800" #TODO: Cambiar esto para cada dominio
+    rtype  = "SOA"
+    ttl    = "300"
+  }
+  rtype = "SOA"
+  #scope = <<Optional value not found in discovery>>
+  #view_id = <<Optional value not found in discovery>>
+  zone_name_or_id = oci_dns_zone.dns_zone.id
+}
+
+
+resource "oci_health_checks_http_monitor" "http_monitor" {
+  count = var.steering_policy_enabled ? 1 : 0
   #Required
   compartment_id      = var.compartment_id
   display_name        = "${var.domain_name}-http-monitor"
@@ -30,28 +115,11 @@ resource "oci_health_checks_http_monitor" "test_http_monitor" {
   timeout_in_seconds = var.policy.http_timeout
 }
 
-resource "oci_dns_zone" "dns_zone" {
-  compartment_id = var.compartment_id
-
-  defined_tags = {
-    "Oracle-Tags.CreatedBy" = "default/terraform",
-    "Oracle-Tags.Environment" = var.environment 
-  }
-
-  dnssec_state = "DISABLED"
-
-  freeform_tags = {
-  }
-
-  name      = var.domain_name
-  scope     = "GLOBAL"
-  zone_type = "PRIMARY"
-}
-
-resource "oci_dns_steering_policy_attachment" "test_steering_policy_attachment" {
+resource "oci_dns_steering_policy_attachment" "steering_policy_attachment" {
+  count = var.steering_policy_enabled ? 1 : 0
   #Required
   domain_name        = "${var.subdomain_name}.${var.domain_name}"
-  steering_policy_id = oci_dns_steering_policy.export_mypolicy.id
+  steering_policy_id = oci_dns_steering_policy.export_mypolicy[count.index].id
   zone_id            = oci_dns_zone.dns_zone.id
 
   #Optional
@@ -60,6 +128,7 @@ resource "oci_dns_steering_policy_attachment" "test_steering_policy_attachment" 
 
 
 resource "oci_dns_steering_policy" "export_mypolicy" {
+  count = var.steering_policy_enabled ? 1 : 0
 
   dynamic "answers" {
     for_each = local.compute_ip_list
@@ -91,16 +160,16 @@ resource "oci_dns_steering_policy" "export_mypolicy" {
   compartment_id = var.compartment_id
 
   defined_tags = {
-    "Oracle-Tags.CreatedBy" = "default/terraform",
-    "Oracle-Tags.Environment" = var.environment 
+    "Oracle-Tags.CreatedBy"   = "default/terraform",
+    "Oracle-Tags.Environment" = var.environment
   }
 
-  display_name = "mypolicy"
+  display_name = "steering-policy"
 
   freeform_tags = {
   }
 
-  health_check_monitor_id = oci_health_checks_http_monitor.test_http_monitor.id
+  health_check_monitor_id = oci_health_checks_http_monitor.http_monitor[count.index].id
 
   rules {
     default_answer_data {
@@ -154,57 +223,3 @@ resource "oci_dns_steering_policy" "export_mypolicy" {
   template = "FAILOVER"
   ttl      = "30"
 }
-
-
-
-resource "oci_dns_rrset" "ns_record_set" {
-  compartment_id = var.compartment_id
-  domain         = var.domain_name
-  items {
-    domain = var.domain_name
-    rdata  = "ns2.p201.dns.oraclecloud.net."
-    rtype  = "NS"
-    ttl    = "86400"
-  }
-  items {
-    domain = var.domain_name
-    rdata  = "ns3.p201.dns.oraclecloud.net."
-    rtype  = "NS"
-    ttl    = "86400"
-  }
-  items {
-    domain = var.domain_name
-    rdata  = "ns4.p201.dns.oraclecloud.net."
-    rtype  = "NS"
-    ttl    = "86400"
-  }
-  items {
-    domain = var.domain_name
-    rdata  = "ns1.p201.dns.oraclecloud.net."
-    rtype  = "NS"
-    ttl    = "86400"
-  }
-  rtype = "NS"
-  #scope = <<Optional value not found in discovery>>
-  #view_id = <<Optional value not found in discovery>>
-  zone_name_or_id = oci_dns_zone.dns_zone.id
-
-}
-
-resource "oci_dns_rrset" "soa_record_set" {
-  compartment_id = var.compartment_id
-  domain         = var.domain_name
-  items {
-    domain = var.domain_name
-    rdata  = "ns1.p201.dns.oraclecloud.net. hostmaster.${var.domain_name}. 2 3600 600 604800 1800"//TODO: Cambiar esto para cada dominio
-    rtype  = "SOA"
-    ttl    = "300"
-  }
-  rtype = "SOA"
-  #scope = <<Optional value not found in discovery>>
-  #view_id = <<Optional value not found in discovery>>
-  zone_name_or_id = oci_dns_zone.dns_zone.id
-}
-
-
-
