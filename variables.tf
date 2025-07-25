@@ -53,3 +53,9 @@ variable "environment" {
   type = string
   description = "The target environment"
 }
+
+variable "zone_type" {
+  type = string
+  default = "GLOBAL"
+  description = "The zone type (GLOBAL: public, PRIVATE: internal)"
+}
