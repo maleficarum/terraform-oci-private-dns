@@ -1,23 +1,28 @@
-resource "oci_dns_view" "dns_view" {
+resource "oci_identity_compartment" "dns_compartment" {
   compartment_id = var.compartment_id
+  description    = "Compartment for dns resources"
+  name           = "dns"
+}
+
+resource "oci_dns_view" "dns_view" {
+  compartment_id = oci_identity_compartment.dns_compartment.id
 
   defined_tags = {
-    "Oracle-Tags.CreatedBy"   = "default/terraform",
+    "Oracle-Tags.CreatedBy"   = "default/terraform-cae",
     "Oracle-Tags.Environment" = var.environment
   }
 
   display_name = var.domain_name
   freeform_tags = {
   }
-  #scope = <<Optional value not found in discovery>>
+  scope = var.zone_type
 }
 
-
 resource "oci_dns_zone" "dns_zone" {
-  compartment_id = var.compartment_id
+  compartment_id = oci_identity_compartment.dns_compartment.id
 
   defined_tags = {
-    "Oracle-Tags.CreatedBy"   = "default/terraform",
+    "Oracle-Tags.CreatedBy"   = "default/terraform-cae",
     "Oracle-Tags.Environment" = var.environment
   }
 
@@ -27,8 +32,10 @@ resource "oci_dns_zone" "dns_zone" {
   }
 
   name      = var.domain_name
-  scope     = "GLOBAL"
+  scope     = var.zone_type
   zone_type = "PRIMARY"
+
+  view_id        = oci_dns_view.dns_view.id 
 }
 
 resource "oci_dns_rrset" "compute_instances_rrset" {
@@ -37,7 +44,7 @@ resource "oci_dns_rrset" "compute_instances_rrset" {
   zone_name_or_id = oci_dns_zone.dns_zone.id
   domain          = "${var.compute_instances_names[each.key]}.${var.domain_name}"
   rtype           = "A"
-  compartment_id  = var.compartment_id
+  compartment_id  = oci_identity_compartment.dns_compartment.id
 
   items {
     domain = "${var.compute_instances_names[each.key]}.${var.domain_name}"
@@ -48,7 +55,8 @@ resource "oci_dns_rrset" "compute_instances_rrset" {
 }
 
 resource "oci_dns_rrset" "ns_record_set" {
-  compartment_id = var.compartment_id
+  count = var.zone_type == "PRIVATE" ? 0 : 1
+  compartment_id = oci_identity_compartment.dns_compartment.id
   domain         = var.domain_name
   items {
     domain = var.domain_name
@@ -82,7 +90,8 @@ resource "oci_dns_rrset" "ns_record_set" {
 }
 
 resource "oci_dns_rrset" "soa_record_set" {
-  compartment_id = var.compartment_id
+  count = var.zone_type == "PRIVATE" ? 0 : 1
+  compartment_id = oci_identity_compartment.dns_compartment.id
   domain         = var.domain_name
   items {
     domain = var.domain_name
@@ -96,11 +105,10 @@ resource "oci_dns_rrset" "soa_record_set" {
   zone_name_or_id = oci_dns_zone.dns_zone.id
 }
 
-
 resource "oci_health_checks_http_monitor" "http_monitor" {
   count = var.steering_policy_enabled ? 1 : 0
   #Required
-  compartment_id      = var.compartment_id
+  compartment_id      = oci_identity_compartment.dns_compartment.id
   display_name        = "${var.domain_name}-http-monitor"
   interval_in_seconds = var.policy.interval_in_seconds
   protocol            = var.policy.protocol
@@ -125,7 +133,6 @@ resource "oci_dns_steering_policy_attachment" "steering_policy_attachment" {
   #Optional
   display_name = "${var.domain_name}-policy-attachment"
 }
-
 
 resource "oci_dns_steering_policy" "export_mypolicy" {
   count = var.steering_policy_enabled ? 1 : 0
@@ -157,10 +164,10 @@ resource "oci_dns_steering_policy" "export_mypolicy" {
     rtype       = "A"
   }*/
 
-  compartment_id = var.compartment_id
+  compartment_id = oci_identity_compartment.dns_compartment.id
 
   defined_tags = {
-    "Oracle-Tags.CreatedBy"   = "default/terraform",
+    "Oracle-Tags.CreatedBy"   = "default/terraform-cae",
     "Oracle-Tags.Environment" = var.environment
   }
 
