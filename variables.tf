@@ -3,6 +3,7 @@ variable "domain_name" {
   description = "FQDN to handle"
 }
 
+# tflint-ignore: terraform_unused_declarations
 variable "is_destroying" {
   type = bool
   default = false
