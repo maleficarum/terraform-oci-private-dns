@@ -45,22 +45,22 @@ resource "oci_dns_resolver" "vcn_resolver" {
 }
 
 resource "oci_dns_resolver_endpoint" "private_endpoint" {
-  resolver_id    = oci_dns_resolver.vcn_resolver.id
-  name           = "private_endpoint"
-  is_forwarding  = true
-  is_listening   = false
-  subnet_id      = var.private_subnet.id
-  scope          = "PRIVATE"
+  resolver_id   = oci_dns_resolver.vcn_resolver.id
+  name          = "private_endpoint"
+  is_forwarding = true
+  is_listening  = false
+  subnet_id     = var.private_subnet.id
+  scope         = "PRIVATE"
 }
 
 # Public Subnet Endpoint
 resource "oci_dns_resolver_endpoint" "public_endpoint" {
-  resolver_id    = oci_dns_resolver.vcn_resolver.id
-  name           = "public_endpoint"
-  is_forwarding  = false
-  is_listening   = true
-  subnet_id      = var.public_subnet.id
-  scope          = "PRIVATE"
+  resolver_id   = oci_dns_resolver.vcn_resolver.id
+  name          = "public_endpoint"
+  is_forwarding = false
+  is_listening  = true
+  subnet_id     = var.public_subnet.id
+  scope         = "PRIVATE"
 }
 
 #resource "oci_core_dhcp_options" "private_dns" {
