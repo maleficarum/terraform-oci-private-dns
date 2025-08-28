@@ -1,11 +1,13 @@
 resource "oci_identity_compartment" "dns_compartment" {
+  count = var.compartment_id != "" ? 1 : 0
+
   compartment_id = var.compartment_id
   description    = "Compartment for DNS resources"
   name           = "dns"
 }
 
 resource "oci_dns_view" "private_view" {
-  compartment_id = oci_identity_compartment.dns_compartment.id
+  compartment_id = local.compartment_id
   display_name   = "private_view_${replace(var.domain_name, ".", "_")}"
   scope          = "PRIVATE"
 
@@ -16,7 +18,7 @@ resource "oci_dns_view" "private_view" {
 }
 
 resource "oci_dns_zone" "private_zone" {
-  compartment_id = oci_identity_compartment.dns_compartment.id
+  compartment_id = local.compartment_id
   name           = var.domain_name
   zone_type      = "PRIMARY"
   scope          = "PRIVATE"
@@ -28,7 +30,7 @@ resource "oci_dns_zone" "private_zone" {
 }
 
 resource "oci_dns_resolver" "vcn_resolver" {
-  compartment_id = oci_identity_compartment.dns_compartment.id
+  compartment_id = local.compartment_id
   display_name   = "${var.domain_name}-resolver"
   scope          = "PRIVATE"
   resolver_id    = data.oci_dns_resolvers.vcn_resolvers.resolvers[0].id
@@ -64,7 +66,7 @@ resource "oci_dns_resolver_endpoint" "public_endpoint" {
 }
 
 #resource "oci_core_dhcp_options" "private_dns" {
-#  compartment_id = oci_identity_compartment.dns_compartment.id
+#  compartment_id = local.compartment_id
 #  vcn_id         = var.vcn
 #  display_name   = "private_dns_options"
 
@@ -85,7 +87,7 @@ resource "oci_dns_rrset" "compute_instances_rrset" {
   zone_name_or_id = oci_dns_zone.private_zone.id
   domain          = "${lower(var.compute_instances_names[each.key])}.${var.domain_name}"
   rtype           = "A"
-  compartment_id  = oci_identity_compartment.dns_compartment.id
+  compartment_id  = local.compartment_id
 
   items {
     domain = "${lower(var.compute_instances_names[each.key])}.${var.domain_name}"

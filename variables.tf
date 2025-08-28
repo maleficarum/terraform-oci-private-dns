@@ -24,7 +24,14 @@ variable "network_compartment" {
 
 variable "compartment_id" {
   type        = string
-  description = "Parent compartment where a child compartment to deploy the resources will be created"
+  default = ""
+  description = "Parent compartment (OCID) where all the sub-compartments will be created (networking, compute)"
+}
+
+variable "existing_compartment" {
+  type        = string
+  default = ""
+  description = "The existing compartment where the network resources should be created. If this si set, the compartment_id variable should be empty"  
 }
 
 variable "environment" {

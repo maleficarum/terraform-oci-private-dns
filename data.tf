@@ -1,5 +1,5 @@
 data "oci_dns_resolvers" "vcn_resolvers" {
-  compartment_id = var.is_destroying ? oci_identity_compartment.dns_compartment.id : var.network_compartment
+  compartment_id = var.is_destroying ? local.compartment_id : var.network_compartment
   scope          = "PRIVATE"
 }
 
